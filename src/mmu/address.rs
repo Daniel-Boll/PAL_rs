@@ -18,7 +18,7 @@ impl LogicalAddress {
   }
 
   pub fn page(&self, page_size: usize) -> usize {
-    self.value() >> (32 - page_size.ilog2())
+    self.value() >> page_size.ilog2()
   }
 
   pub fn offset(&self, page_size: usize) -> usize {

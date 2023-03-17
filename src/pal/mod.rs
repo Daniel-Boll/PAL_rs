@@ -1,81 +1,64 @@
+use clap::ValueEnum;
+use core::fmt::Debug;
+use std::str::FromStr;
+
+use self::counter::CounterPALTable;
+
+pub mod counter;
+
 pub trait PALTable {
   fn find_frame_to_deallocate(&mut self) -> usize;
   fn update_access(&mut self, frame: usize);
   fn insert(&mut self, frame: usize) -> Option<usize>;
+  fn clone_dyn(&self) -> Box<dyn PALTable>;
+  fn print(&self);
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct LRUPALTableEntry {
-  pub frame: usize,
-  pub last_access: usize,
-}
-
-pub struct LRUPALTable {
-  pub entries: Vec<LRUPALTableEntry>,
-}
-
-impl PALTable for LRUPALTable {
-  fn find_frame_to_deallocate(&mut self) -> usize {
-    let mut min = (0, usize::MAX);
-    for LRUPALTableEntry { frame, last_access } in self.entries.iter() {
-      if last_access < &min.1 {
-        min = (*frame, *last_access);
-      }
-    }
-
-    let (frame, _) = min;
-    self.entries.retain(|x| x.frame != frame);
-    frame
-  }
-
-  fn update_access(&mut self, frame: usize) {
-    if let Some(last_access) = self.entries.get_mut(frame) {
-      last_access.last_access += 1;
-    }
-  }
-
-  fn insert(&mut self, frame: usize) -> Option<usize> {
-    match self.entries.get(frame) {
-      Some(_) => {
-        self.update_access(frame);
-        None
-      }
-      None => {
-        let frame_to_deallocate = if self.entries.len() >= self.entries.capacity() {
-          Some(self.find_frame_to_deallocate())
-        } else {
-          None
-        };
-
-        self.entries.push(LRUPALTableEntry {
-          frame,
-          last_access: 0,
-        });
-
-        frame_to_deallocate
-      }
-    }
+impl Debug for dyn PALTable {
+  fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    write!(f, "PALTable <imagine>")
   }
 }
 
+#[derive(ValueEnum, Debug, Clone)]
 pub enum PALAlgorithm {
   LRU,
+  Counter,
 }
 
+impl FromStr for PALAlgorithm {
+  type Err = String;
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+    match s {
+      "lru" => Ok(PALAlgorithm::LRU),
+      _ => Err(format!("Unknown algorithm: {}", s)),
+    }
+  }
+}
+
+#[derive(Debug)]
 pub struct PAL {
   pub table: Box<dyn PALTable>,
 }
 
+impl Clone for PAL {
+  fn clone(&self) -> Self {
+    Self {
+      table: self.table.clone_dyn(),
+    }
+  }
+}
+
 impl PAL {
   pub fn new(algorithm: PALAlgorithm, frame_count: usize) -> Self {
-    println!("Creating a hashmap with capacity: {}", frame_count);
-
     match algorithm {
-      PALAlgorithm::LRU => Self {
-        table: Box::new(LRUPALTable {
+      PALAlgorithm::Counter => Self {
+        table: Box::new(CounterPALTable {
           entries: Vec::with_capacity(frame_count),
         }),
       },
+      PALAlgorithm::LRU => unimplemented!(),
     }
   }
 
@@ -89,6 +72,10 @@ impl PAL {
 
   pub fn insert(&mut self, frame: usize) -> Option<usize> {
     self.table.insert(frame)
+  }
+
+  pub fn print(&self) {
+    self.table.print()
   }
 }
 

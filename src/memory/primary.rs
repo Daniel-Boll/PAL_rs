@@ -22,7 +22,14 @@ impl PrimaryMemory {
   }
 
   pub fn alloc_frame(&mut self) -> Option<usize> {
-    self.frames.iter().position(|frame| !frame.data)
+    for (i, frame) in self.frames.iter_mut().enumerate() {
+      if !frame.data {
+        frame.data = true;
+        return Some(i);
+      }
+    }
+
+    None
   }
 }
 
