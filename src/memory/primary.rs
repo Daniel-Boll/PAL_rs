@@ -34,4 +34,4 @@ impl PrimaryMemory {
 }
 
 pub static mut PRIMARY_MEMORY: Lazy<Mutex<PrimaryMemory>> =
-  Lazy::new(|| Mutex::new(PrimaryMemory::new(4)));
+  Lazy::new(|| Mutex::new(PrimaryMemory::new(4096)));

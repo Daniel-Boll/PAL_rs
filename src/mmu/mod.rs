@@ -30,7 +30,7 @@ impl MMU {
       },
       page_size,
       // TODO: Get the number of free frames in the PAL from the CLI as well
-      pal: PAL::new(pal_algorithm, 4),
+      pal: PAL::new(pal_algorithm, 4096),
     }
   }
 
@@ -41,7 +41,7 @@ impl MMU {
 
     let (page, offset) = address.split(self.page_size);
 
-    println!("Translating address {:?} to page {page} {offset}", cp);
+    // println!("Translating address {:?} to page {page} {offset}", cp);
 
     match self.page_table.get_frame(page) {
       Some(frame) => {
@@ -63,7 +63,7 @@ impl MMU {
               // 2. Send frame to PAL
               self.pal.insert(frame);
 
-              println!("[MEM] Allocated frame {frame}");
+              // println!("[MEM] Allocated frame {frame}");
             }
             None => {
               // 1. PAL deallocate a MF and return the allocated frame index
@@ -78,14 +78,14 @@ impl MMU {
               // 4. Send frame to PAL
               self.pal.insert(frame);
 
-              println!("[PAL] Allocated frame {frame}");
+              // println!("[PAL] Allocated frame {frame}");
             }
           }
         }
       }
     };
 
-    self.pal.print();
+    // self.pal.print();
 
     1
   }
@@ -148,7 +148,7 @@ mod tests {
     let mut mmu = MMU::new(4096, PALAlgorithm::LRU);
 
     // Generate random addresses
-    let addresses = (0..1000)
+    let addresses = (0..10000)
       .map(|_| {
         let mut rng = rand::thread_rng();
         let address: u32 = rng.gen();

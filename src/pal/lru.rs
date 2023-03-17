@@ -1,22 +1,25 @@
+use chrono::{DateTime, TimeZone, Utc};
+
 use super::PALTable;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct CounterPALTableEntry {
+pub struct LRUPALTableEntry {
   pub frame: usize,
-  pub last_access: usize,
+  pub last_access: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone)]
-pub struct CounterPALTable {
-  pub entries: Vec<CounterPALTableEntry>,
+pub struct LRUPALTable {
+  pub entries: Vec<LRUPALTableEntry>,
 }
 
-impl PALTable for CounterPALTable {
+impl PALTable for LRUPALTable {
   fn find_frame_to_deallocate(&mut self) -> usize {
-    let mut min = (0, usize::MAX);
-    for CounterPALTableEntry { frame, last_access } in self.entries.iter() {
-      if last_access < &min.1 {
-        min = (*frame, *last_access);
+    let mut min = (0, i64::MAX);
+    for LRUPALTableEntry { frame, last_access } in self.entries.iter() {
+      let last_access = last_access.timestamp_millis();
+      if last_access < min.1 {
+        min = (*frame, last_access);
       }
     }
 
@@ -26,7 +29,7 @@ impl PALTable for CounterPALTable {
   }
 
   fn update_access(&mut self, index: usize) {
-    self.entries[index].last_access += 1;
+    self.entries[index].last_access = Utc::now();
   }
 
   fn insert(&mut self, frame: usize) -> Option<usize> {
@@ -42,9 +45,9 @@ impl PALTable for CounterPALTable {
           None
         };
 
-        self.entries.push(CounterPALTableEntry {
+        self.entries.push(LRUPALTableEntry {
           frame,
-          last_access: 0,
+          last_access: Utc::now(),
         });
 
         frame_to_deallocate
@@ -57,9 +60,13 @@ impl PALTable for CounterPALTable {
   }
 
   fn print(&self) {
-    println!("Counter PAL Table {{");
-    for CounterPALTableEntry { frame, last_access } in self.entries.iter() {
-      println!("   [{frame}]: {last_access}");
+    println!("LRU PAL Table {{");
+    for LRUPALTableEntry { frame, last_access } in self.entries.iter() {
+      println!(
+        "   [{frame}]: {}",
+        last_access.format("%Y-%m-%d %H:%M:%S%.3f"),
+        frame = frame
+      );
     }
     println!("}}");
   }
