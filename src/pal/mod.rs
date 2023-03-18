@@ -5,6 +5,7 @@ use std::str::FromStr;
 use self::counter::CounterPALTable;
 
 pub mod counter;
+pub mod lru;
 
 pub trait PALTable {
   fn find_frame_to_deallocate(&mut self) -> usize;
@@ -32,6 +33,7 @@ impl FromStr for PALAlgorithm {
   fn from_str(s: &str) -> Result<Self, Self::Err> {
     match s {
       "lru" => Ok(PALAlgorithm::LRU),
+      "counter" => Ok(PALAlgorithm::Counter),
       _ => Err(format!("Unknown algorithm: {}", s)),
     }
   }
@@ -58,7 +60,11 @@ impl PAL {
           entries: Vec::with_capacity(frame_count),
         }),
       },
-      PALAlgorithm::LRU => unimplemented!(),
+      PALAlgorithm::LRU => Self {
+        table: Box::new(lru::LRUPALTable {
+          entries: Vec::with_capacity(frame_count),
+        }),
+      },
     }
   }
 
