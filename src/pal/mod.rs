@@ -1,11 +1,14 @@
 use clap::ValueEnum;
 use core::fmt::Debug;
+use std::collections::VecDeque;
 use std::str::FromStr;
 
 use self::counter::CounterPALTable;
+use self::second_chance::SecondChancePALTable;
 
 pub mod counter;
 pub mod lru;
+pub mod second_chance;
 
 pub trait PALTable {
   fn find_frame_to_deallocate(&mut self) -> usize;
@@ -25,6 +28,7 @@ impl Debug for dyn PALTable {
 pub enum PALAlgorithm {
   LRU,
   Counter,
+  SecondChance,
 }
 
 impl FromStr for PALAlgorithm {
@@ -34,6 +38,7 @@ impl FromStr for PALAlgorithm {
     match s {
       "lru" => Ok(PALAlgorithm::LRU),
       "counter" => Ok(PALAlgorithm::Counter),
+      "second_chance" => Ok(PALAlgorithm::SecondChance),
       _ => Err(format!("Unknown algorithm: {}", s)),
     }
   }
@@ -63,6 +68,11 @@ impl PAL {
       PALAlgorithm::LRU => Self {
         table: Box::new(lru::LRUPALTable {
           entries: Vec::with_capacity(frame_count),
+        }),
+      },
+      PALAlgorithm::SecondChance => Self {
+        table: Box::new(SecondChancePALTable {
+          entries: VecDeque::with_capacity(frame_count),
         }),
       },
     }
@@ -95,6 +105,92 @@ mod tests {
 
     [0, 0, 1, 2, 1, 3, 3, 5, 5].iter().for_each(|&x| {
       println!("[{x}] - {:?}", pal.insert(x));
+    });
+  }
+
+  #[test]
+  fn test_second_chance() {
+    let mut pal = PAL::new(PALAlgorithm::SecondChance, 4);
+
+    // all elements are setted as accessed
+    [
+      (0, None),
+      (0, None),
+      (1, None),
+      (2, None),
+      (2, None),
+      (1, None),
+      (3, None),
+      (3, None),
+      (5, Some(0)),
+      (5, None),
+    ]
+    .iter()
+    .for_each(|(x, expected)| {
+      let insertion_result = pal.insert(*x);
+      println!("[{x}] - {:?}", insertion_result);
+      assert_eq!(insertion_result, *expected);
+    });
+
+    // 2 and 3 not accessed, but 2 is removed because of the queue
+    println!("======================");
+    pal = PAL::new(PALAlgorithm::SecondChance, 4);
+    [
+      (0, None),
+      (0, None),
+      (1, None),
+      (2, None),
+      (1, None),
+      (3, None),
+      (5, Some(2)),
+      (5, None),
+    ]
+    .iter()
+    .for_each(|(x, expected)| {
+      let insertion_result = pal.insert(*x);
+      println!("[{x}] - {:?}", insertion_result);
+      assert_eq!(insertion_result, *expected);
+    });
+
+    // only 2 is not accessed
+    println!("======================");
+    let mut pal = PAL::new(PALAlgorithm::SecondChance, 4);
+    [
+      (0, None),
+      (0, None),
+      (1, None),
+      (2, None),
+      (1, None),
+      (3, None),
+      (3, None),
+      (5, Some(2)),
+      (5, None),
+    ]
+    .iter()
+    .for_each(|(x, expected)| {
+      let insertion_result = pal.insert(*x);
+      println!("[{x}] - {:?}", insertion_result);
+      assert_eq!(insertion_result, *expected);
+    });
+
+    // 1 and 2 not accessed, but 1 is removed because of the queue
+    println!("======================");
+    let mut pal = PAL::new(PALAlgorithm::SecondChance, 4);
+    [
+      (0, None),
+      (0, None),
+      (1, None),
+      (2, None),
+      (3, None),
+      (3, None),
+      (5, Some(1)),
+      (5, None),
+    ]
+    .iter()
+    .for_each(|(x, expected)| {
+      let insertion_result = pal.insert(*x);
+      println!("[{x}] - {:?}", insertion_result);
+      assert_eq!(insertion_result, *expected);
     });
   }
 }
