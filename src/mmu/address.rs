@@ -35,7 +35,8 @@ impl FromStr for LogicalAddress {
 
   fn from_str(s: &str) -> Result<Self, Self::Err> {
     Ok(LogicalAddress {
-      value: u64::from_str_radix(s, 16)?,
+      value: u64::from_str_radix(s.trim_start(), 16)
+        .expect(format!("Failed to parse address {}", s).as_str()),
     })
   }
 }

@@ -1,6 +1,7 @@
 use clap::ValueEnum;
 use core::fmt::Debug;
-use std::str::FromStr;
+use singleton_manager::sm;
+use std::{str::FromStr, sync::Mutex};
 
 use self::counter::CounterPALTable;
 
@@ -42,12 +43,14 @@ impl FromStr for PALAlgorithm {
 #[derive(Debug)]
 pub struct PAL {
   pub table: Box<dyn PALTable>,
+  pub guard: Mutex<()>,
 }
 
 impl Clone for PAL {
   fn clone(&self) -> Self {
     Self {
       table: self.table.clone_dyn(),
+      guard: Mutex::new(()),
     }
   }
 }
@@ -59,29 +62,42 @@ impl PAL {
         table: Box::new(CounterPALTable {
           entries: Vec::with_capacity(frame_count),
         }),
+        guard: Mutex::new(()),
       },
       PALAlgorithm::LRU => Self {
         table: Box::new(lru::LRUPALTable {
           entries: Vec::with_capacity(frame_count),
         }),
+        guard: Mutex::new(()),
       },
     }
   }
 
   pub fn find_frame_to_deallocate(&mut self) -> usize {
+    let _guard = self.guard.lock().unwrap();
     self.table.find_frame_to_deallocate()
   }
 
   pub fn update_access(&mut self, frame: usize) {
+    let _guard = self.guard.lock().unwrap();
     self.table.update_access(frame)
   }
 
   pub fn insert(&mut self, frame: usize) -> Option<usize> {
+    let _guard = self.guard.lock().unwrap();
     self.table.insert(frame)
   }
 
   pub fn print(&self) {
     self.table.print()
+  }
+
+  pub fn get() -> &'static mut Self {
+    sm().get::<Self>("PAL").unwrap()
+  }
+
+  pub fn create(algorithm: PALAlgorithm, frame_count: usize) {
+    sm().set("PAL", Self::new(algorithm, frame_count)).unwrap();
   }
 }
 

@@ -1,6 +1,6 @@
 # PAL_rs
 
-1 - Instanciar memória na MMU
-2 - Pegar o número de linhas do PAL
-3 - Testar sobre o conjunto de Traces
-4 - Definir o output para as análises
+- [X] Instanciar memória na MMU
+- [X] Pegar o número de linhas do PAL
+- [ ] Testar sobre o conjunto de Traces
+- [ ] Definir o output para as análises

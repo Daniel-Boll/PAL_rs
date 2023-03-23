@@ -1,5 +1,6 @@
-use once_cell::sync::Lazy;
 use std::sync::Mutex;
+
+use singleton_manager::sm;
 
 #[derive(Default)]
 pub struct Frame {
@@ -8,20 +9,26 @@ pub struct Frame {
 
 pub struct PrimaryMemory {
   pub frames: Vec<Frame>,
+  pub guard: Mutex<()>,
 }
 
 impl PrimaryMemory {
   pub fn new(size: usize) -> Self {
     Self {
       frames: (0..size).map(|_| Frame::default()).collect(),
+      guard: Mutex::new(()),
     }
   }
 
   pub fn get_frame(&self, index: usize) -> bool {
+    let _guard = self.guard.lock().expect("Failed to get guard");
+
     self.frames[index].data
   }
 
   pub fn alloc_frame(&mut self) -> Option<usize> {
+    let _guard = self.guard.lock().expect("Failed to get guard");
+
     for (i, frame) in self.frames.iter_mut().enumerate() {
       if !frame.data {
         frame.data = true;
@@ -31,7 +38,14 @@ impl PrimaryMemory {
 
     None
   }
-}
 
-pub static mut PRIMARY_MEMORY: Lazy<Mutex<PrimaryMemory>> =
-  Lazy::new(|| Mutex::new(PrimaryMemory::new(4096)));
+  pub fn get() -> &'static mut Self {
+    sm().get::<Self>("MEMORY").unwrap()
+  }
+
+  pub fn create(size: usize) {
+    sm()
+      .set("MEMORY", PrimaryMemory::new(size))
+      .expect("Failed to create memory");
+  }
+}
