@@ -1,0 +1,150 @@
+#!/usr/bin/env python
+import argparse
+import json
+import os
+import subprocess
+from typing import Iterable
+from typing import List
+
+import matplotlib.pyplot as plt
+import pandas as pd
+
+
+def plot_data(
+    xs: Iterable[Iterable],
+    ys: Iterable[Iterable],
+    legends: List[str],
+    colors: List[str],
+    x_label: str,
+    y_label: str,
+    title: str,
+    x_lim: int | None = None,
+    y_lim: int | None = None,
+    save_path: str | None = None,
+) -> None:
+    """
+    Plot a graph.
+    """
+
+    plt.figure(figsize=(16, 0.5 * len(xs[0]) + 0.5))
+    plt.title(title)
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+
+    if x_lim:
+        plt.xlim(0, x_lim)
+    if y_lim:
+        plt.ylim(0, y_lim)
+
+    for x, y, color in zip(xs, ys, colors):
+        plt.plot(y, x, color=color)
+
+    plt.legend(legends)
+    # Literal Dogshit
+    if save_path:
+        plt.savefig(save_path, format="svg", dpi=1200)
+    else:
+        plt.show()
+
+
+def tabulate_data(trace, data, save_path):
+    fig, ax = plt.subplots(figsize=(16, 0.5 * len(data) + 0.5))
+
+    data = {
+        "frames livres": [2**i for i in range(0, 17)],
+        "falhas de página": data
+    }
+
+    # hide axes
+    fig.patch.set_visible(False)
+    ax.axis("off")
+    ax.axis("tight")
+
+    df = pd.DataFrame(data, )
+    df_r = df.round(decimals=3)
+
+    ax.table(
+        cellText=df_r.values,
+        colLabels=df_r.columns,
+        loc="center",
+        colColours=["#BD93F9"] * len(df_r.columns),
+    )
+
+    ax.set_title(trace)
+    fig.tight_layout()
+
+    if save_path:
+        plt.savefig(save_path, format="svg", dpi=300)
+    else:
+        plt.show()
+
+
+def run_analysis(trace, algorithm):
+    return map(
+        int,
+        map(
+            lambda x: subprocess.check_output([
+                "cargo",
+                "run",
+                "--release",
+                "--",
+                "translate",
+                trace,
+                "--algorithm",
+                algorithm,
+                "--pal-table-entries",
+                str(x),
+            ], ).decode("utf-8"),
+            [2**i for i in range(0, 17)],
+        ),
+    )
+
+
+def parse_output(output):
+    return json.loads(output)
+
+
+def generate_visualizations(name, data, ouput_dir):
+    output = f"{ouput_dir}/{name}"
+    os.makedirs(output, exist_ok=True)
+
+    x = [2**i for i in range(0, 17)]
+
+    # clear the plot
+    plot_data(
+        [data],
+        [x],
+        ["Falhas de página"],
+        ["red"],
+        "Frames Livre",
+        "Falhas de página",
+        name,
+        save_path=f"{output}/page_faults.svg",
+    )
+    plt.close("all")
+
+    tabulate_data(name, data, save_path=f"{output}/table.svg")
+    plt.close("all")
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--output",
+                        default="./assets/analysis",
+                        help="Output directory")
+    parser.add_argument("trace", help="Traces to analyze")
+    # posible values are: lru, counter, second-chance
+    parser.add_argument("--algorithm", default="lru", help="algorithm")
+    args = parser.parse_args()
+
+    os.makedirs(args.output, exist_ok=True)
+
+    result = list(run_analysis(args.trace, args.algorithm))
+    print(list(result))
+    generate_visualizations(
+        f"{args.algorithm}: {os.path.basename(args.trace)}", result,
+        args.output)
+
+
+if __name__ == "__main__":
+    main()
