@@ -36,7 +36,7 @@ impl MMU {
   }
 
   pub fn translate(&mut self, address: &LogicalAddress) -> TranslationResult {
-    let (page, offset) = address.split(self.page_size);
+    let (page, _offset) = address.split(self.page_size);
     // println!("Page: {}, Offset: {}", page, offset);
 
     let res = match self.page_table.get_frame(page) {

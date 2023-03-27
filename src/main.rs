@@ -11,11 +11,11 @@ fn main() -> anyhow::Result<()> {
     Commands::Translate(opts) => mmu::entrypoint(opts),
   };
 
-  let (a, b) = results?.iter().fold((0, 0), |(a, b), r| match r {
+  let (_, b) = results?.iter().fold((0, 0), |(a, b), r| match r {
     TranslationResult::Hit => (a + 1, b),
     TranslationResult::Fault => (a, b + 1),
   });
 
-  println!("Hits: {}, Faults: {}", a, b);
+  print!("{}", b);
   Ok(())
 }
