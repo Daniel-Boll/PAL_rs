@@ -1,8 +1,8 @@
 use clap::ValueEnum;
 use core::fmt::Debug;
 use singleton_manager::sm;
-use std::{str::FromStr, sync::Mutex};
 use std::collections::VecDeque;
+use std::{str::FromStr, sync::Mutex};
 
 use self::counter::CounterPALTable;
 use self::second_chance::SecondChancePALTable;
@@ -25,7 +25,7 @@ impl Debug for dyn PALTable {
   }
 }
 
-#[derive(ValueEnum, Debug, Clone)]
+#[derive(ValueEnum, Debug, Clone, Hash, Eq, PartialEq, Copy)]
 pub enum PALAlgorithm {
   LRU,
   Counter,
@@ -79,6 +79,7 @@ impl PAL {
         table: Box::new(SecondChancePALTable {
           entries: VecDeque::with_capacity(frame_count),
         }),
+        guard: Mutex::new(()),
       },
     }
   }

@@ -12,6 +12,12 @@ pub mod page_table;
 pub mod trace;
 
 #[derive(Debug, Clone)]
+pub enum TranslationResult {
+  Fault,
+  Hit,
+}
+
+#[derive(Debug, Clone)]
 pub struct MMU {
   pub page_table: PageTable,
   pub page_size: usize,
@@ -29,19 +35,19 @@ impl MMU {
     }
   }
 
-  pub fn translate(&mut self, address: &LogicalAddress) {
+  pub fn translate(&mut self, address: &LogicalAddress) -> TranslationResult {
     let (page, offset) = address.split(self.page_size);
+    // println!("Page: {}, Offset: {}", page, offset);
 
-    // println!("Translating address {:?} to page {page} {offset}", cp);
-
-    match self.page_table.get_frame(page) {
+    let res = match self.page_table.get_frame(page) {
       Some(frame) => {
         PAL::get().insert(frame);
 
-        println!(
-          "Found address in page table {:06x}",
-          LogicalAddress::join(&address, frame, offset, self.page_size)
-        );
+        // println!(
+        //   "Found address in page table {:06x}",
+        //   LogicalAddress::join(&address, frame, offset, self.page_size)
+        // );
+        TranslationResult::Hit
       }
       None => {
         match PrimaryMemory::get().alloc_frame() {
@@ -53,10 +59,12 @@ impl MMU {
             PAL::get().insert(frame);
 
             // println!("[MEM] Allocated frame {frame}");
+            TranslationResult::Fault
           }
           None => {
             // 1. PAL deallocate a MF and return the allocated frame index
             let frame = PAL::get().find_frame_to_deallocate();
+            // println!("[PAL] Deallocated frame {frame}");
 
             // 2. Invalidate the page table entry
             self.page_table.invalidate_frame(frame);
@@ -66,14 +74,14 @@ impl MMU {
 
             // 4. Send frame to PAL
             PAL::get().insert(frame);
-
             // println!("[PAL] Allocated frame {frame}");
+            TranslationResult::Fault
           }
         }
       }
     };
-
-    // self.pal.print();
+    // PAL::get().print();
+    res
   }
 
   pub fn translate_str(&mut self, address: &str) -> anyhow::Result<()> {
@@ -97,17 +105,18 @@ pub fn entrypoint(
     algorithm,
     pal_table_entries,
   }: &TranslateOptions,
-) -> anyhow::Result<()> {
-  PrimaryMemory::create(*page_table_size);
+) -> anyhow::Result<Vec<TranslationResult>> {
+  PrimaryMemory::create(*pal_table_entries);
   PAL::create(algorithm.clone(), *pal_table_entries);
   let mut mmu = MMU::new(*page_table_size);
   let trace = Trace::from_file(trace_file)?;
 
-  trace
-    .into_iter()
-    .for_each(|address| mmu.translate(&address));
-
-  Ok(())
+  Ok(
+    trace
+      .into_iter()
+      .map(|address| mmu.translate(&address))
+      .collect(),
+  )
 }
 
 #[cfg(test)]

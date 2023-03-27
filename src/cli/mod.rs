@@ -1,4 +1,3 @@
-pub mod analysis;
 pub mod translate;
 
 use clap::{Parser, Subcommand, ValueEnum};
@@ -14,8 +13,6 @@ pub struct Cli {
 #[derive(Subcommand)]
 pub enum Commands {
   Translate(translate::TranslateOptions),
-
-  Analysis,
 }
 
 #[derive(ValueEnum, Debug, Clone)]
