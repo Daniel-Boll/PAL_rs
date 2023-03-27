@@ -1,0 +1,15 @@
+#!/bin/bash
+
+ALGS=("lru" "counter" "second-chance")
+
+# files (all files in ./assets/traces)
+FILES=(./assets/traces/lu.txt ./assets/traces/mmout.txt ./assets/traces/mmout1.txt ./assets/traces/sort1.txt ./assets/traces/very_large_trace.txt)
+
+# for each algorithm
+# for each file
+# run the simulator
+for alg in "${ALGS[@]}"; do
+  for file in "${FILES[@]}"; do
+    ./scripts/analysis --algorithm "$alg" "$file"
+  done
+done
