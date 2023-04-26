@@ -3,7 +3,7 @@ use super::PALTable;
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct CounterPALTableEntry {
   pub frame: usize,
-  pub last_access: usize,
+  pub times_accessed: usize,
 }
 
 #[derive(Debug, Clone)]
@@ -14,9 +14,9 @@ pub struct CounterPALTable {
 impl PALTable for CounterPALTable {
   fn find_frame_to_deallocate(&mut self) -> usize {
     let mut min = (0, usize::MAX);
-    for CounterPALTableEntry { frame, last_access } in self.entries.iter() {
-      if last_access < &min.1 {
-        min = (*frame, *last_access);
+    for CounterPALTableEntry { frame, times_accessed } in self.entries.iter() {
+      if times_accessed < &min.1 {
+        min = (*frame, *times_accessed);
       }
     }
 
@@ -26,7 +26,7 @@ impl PALTable for CounterPALTable {
   }
 
   fn update_access(&mut self, index: usize) {
-    self.entries[index].last_access += 1;
+    self.entries[index].times_accessed += 1;
   }
 
   fn insert(&mut self, frame: usize) -> Option<usize> {
@@ -44,7 +44,7 @@ impl PALTable for CounterPALTable {
 
         self.entries.push(CounterPALTableEntry {
           frame,
-          last_access: 0,
+          times_accessed: 0,
         });
 
         frame_to_deallocate
@@ -58,7 +58,7 @@ impl PALTable for CounterPALTable {
 
   fn print(&self) {
     println!("Counter PAL Table {{");
-    for CounterPALTableEntry { frame, last_access } in self.entries.iter() {
+    for CounterPALTableEntry { frame, times_accessed: last_access } in self.entries.iter() {
       println!("   [{frame}]: {last_access}");
     }
     println!("}}");

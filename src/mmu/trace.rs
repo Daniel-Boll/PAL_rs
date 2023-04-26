@@ -30,6 +30,11 @@ impl Trace {
     self.addresses.len()
   }
 
+  #[must_use]
+  pub fn is_empty(&self) -> bool {
+    self.len() == 0
+  }
+
   pub fn from_file(path: &str) -> anyhow::Result<Self> {
     let mut trace = Self::new();
 
@@ -42,6 +47,12 @@ impl Trace {
 
     Ok(trace)
   }
+}
+
+impl Default for Trace {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 // impl iter to trace

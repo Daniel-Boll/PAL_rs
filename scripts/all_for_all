@@ -1,0 +1,76 @@
+#!/usr/bin/env python
+
+import argparse
+import json
+import os
+import subprocess
+from typing import Iterable
+from typing import List
+
+import matplotlib.pyplot as plt
+import pandas as pd
+
+def run_analysis(trace, algorithm):
+    return map(
+        int,
+        map(
+            lambda x: subprocess.check_output([
+                "cargo",
+                "run",
+                "--release",
+                "--",
+                "translate",
+                trace,
+                "--algorithm",
+                algorithm,
+                "--pal-table-entries",
+                str(x),
+            ], ).decode("utf-8"),
+            [2**i for i in range(0, 17)],
+        ),
+    )
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--output",
+                        default="./assets/analysis",
+                        help="Output directory")
+    # parser.add_argument("trace", help="Traces to analyze")
+    # posible values are: lru, counter, second-chance
+    # parser.add_argument("--algorithm", default="lru", help="algorithm")
+    args = parser.parse_args()
+
+    available_algorithms = ["lru", "counter", "second-chance"]
+    available_traces = ["lu.txt", "mmout.txt", "mmout1.txt", "sort1.txt", "very_large_trace.txt"]
+
+    os.makedirs(args.output, exist_ok=True)
+
+    # a hashmap to store the results in the model algorithm: trace: [results]
+    # results = {}
+
+    # iterate trhough all the traces and run the analysis for each algorithm
+    # for trace in available_traces:
+    #     for algorithm in available_algorithms:
+    #         output = f"./assets/traces/{trace}"
+    #         result = list(run_analysis(output, algorithm))
+    #         results.setdefault(algorithm, {})[trace] = result
+    #     
+    #
+    # print("results: ", results)
+
+    results = {'lru': {'lu.txt': [3986, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2], 'mmout.txt': [6717, 5, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3], 'mmout1.txt': [975, 5, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3], 'sort1.txt': [175, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2], 'very_large_trace.txt': [9955, 9905, 9829, 9673, 9342, 8715, 7446, 5009, 290, 257, 257, 257, 257, 257, 257, 257, 257]}, 'counter': {'lu.txt': [3986, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2], 'mmout.txt': [6717, 6, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3], 'mmout1.txt': [975, 6, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3], 'sort1.txt': [175, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2], 'very_large_trace.txt': [9955, 9919, 9832, 9688, 9399, 8761, 7462, 5036, 293, 257, 257, 257, 257, 257, 257, 257, 257]}, 'second-chance': {'lu.txt': [3986, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2], 'mmout.txt': [6717, 5, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3], 'mmout1.txt': [975, 5, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3], 'sort1.txt': [175, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2], 'very_large_trace.txt': [9955, 9905, 9830, 9678, 9347, 8717, 7467, 4972, 292, 257, 257, 257, 257, 257, 257, 257, 257]}}
+    for key in results.keys():
+        data = results[key]
+        print("DATA: ", range(len(data)), data.values())
+        plt.bar(range(len(data)), data.values())
+        plt.xticks(range(len(data)), data.keys())
+        plt.title(key)
+        plt.show()
+
+    # generate_visualizations(
+    #     f"{args.algorithm}: {os.path.basename(args.trace)}", result,
+    #     args.output)
+
+
+if __name__ == "__main__":
+    main()

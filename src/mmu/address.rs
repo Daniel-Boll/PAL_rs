@@ -34,9 +34,14 @@ impl FromStr for LogicalAddress {
   type Err = std::num::ParseIntError;
 
   fn from_str(s: &str) -> Result<Self, Self::Err> {
+    let value_in_hex = u64::from_str_radix(s.trim(), 16)
+      .unwrap_or_else(|_| panic!("Failed to parse address {}", s));
+
+    // print the value in binary with 32 bits
+    // println!("{:032b}", value_in_hex);
+
     Ok(LogicalAddress {
-      value: u64::from_str_radix(s.trim_start(), 16)
-        .expect(format!("Failed to parse address {}", s).as_str()),
+      value: value_in_hex,
     })
   }
 }

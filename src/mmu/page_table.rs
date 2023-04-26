@@ -2,10 +2,6 @@
 pub struct PageTableEntry {
   pub page_frame_index: usize,
   pub valid: bool,
-
-  // optional
-  pub dirty: bool,
-  pub accessed: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -27,7 +23,6 @@ impl PageTable {
     self.entries[index] = PageTableEntry {
       page_frame_index: frame,
       valid: true,
-      ..self.entries[index]
     }
   }
 

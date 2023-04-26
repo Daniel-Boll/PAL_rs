@@ -9,7 +9,7 @@ pub struct Frame {
 
 pub struct PrimaryMemory {
   pub frames: Vec<Frame>,
-  pub guard: Mutex<()>,
+  pub guard: Mutex<()>, // resource aquisition is initialization (RAII)
 }
 
 impl PrimaryMemory {
@@ -21,8 +21,6 @@ impl PrimaryMemory {
   }
 
   pub fn get_frame(&self, index: usize) -> bool {
-    let _guard = self.guard.lock().expect("Failed to get guard");
-
     self.frames[index].data
   }
 

@@ -139,7 +139,8 @@ def main():
 
     os.makedirs(args.output, exist_ok=True)
 
-    result = list(run_analysis(args.trace, args.algorithm))
+    analisys_map = run_analysis(args.trace, args.algorithm)
+    result = list(analisys_map)
     print(list(result))
     generate_visualizations(
         f"{args.algorithm}: {os.path.basename(args.trace)}", result,
